@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
-import dash
-from dash import dcc, html, Input, Output, State, callback
 import importlib.resources
+from scipy.signal import savgol_filter
+from scipy.signal import find_peaks
 
 
 class MctCalculator:
-    def __init__(self):
-
+    def __init__(self, C_Pdata=None):
+        self.C_Pdata = C_Pdata
         # calculate the P-T curve
         coe_PT = [
             -1.3855442e-12,
@@ -50,7 +50,10 @@ class MctCalculator:
         self.get_original_coes(4)
 
     def get_original_coes(self, deg=4):
-        exp_data = pd.read_csv(importlib.resources.files("data").joinpath("data.txt"), sep='\t')
+        if self.C_Pdata is None:
+            exp_data = pd.read_csv(importlib.resources.files("demag_gui.data").joinpath("data.txt"), sep='\t')
+        else:
+            exp_data = pd.read_csv(self.C_Pdata, sep='\t')
         # exp_data = pd.read_csv("../data/data.txt", sep='\t')
         self.C_mea = np.asarray(exp_data['C'].values[:])
         self.Cinv_mea = 1/self.C_mea
@@ -187,7 +190,84 @@ def cal_Q(T_K, B=0., cal_dQdt=False, t=[]):
             return dQ*1e6 # in uJ
     else:
         return dQ*1e6 # in uJ
+
+
+def process_demag_data(ds, Bi=8.2):
+    try:
+        ds = ds.swap_dims({'t': 'mips_GRPZ_field_persistent'})
+    except:
+        pass
+
+    mct = MctCalculator()
+    mct.recalibrate([[65.06, mct.P_min]])
+    inds = [i for i, val in enumerate(list(ds.AH2500A_C.data < 73)) if val]
+    for ind in inds:
+        ds.AH2500A_C[ind] = ds.AH2500A_C[ind - 2]
+    ds['T'] = ('mips_GRPZ_field_persistent', 1e-3 * mct.C2T_low(ds.AH2500A_C.data))
+    ds['Tmct_mK'] = 1e3 * ds.T
+
+    ts = ds.t.data
+    ts = [float(t - ts[0]) / 1e9 for t in ts]  # in s
+    ds['time_s'] = ('mips_GRPZ_field_persistent', ts)
+
+    if 'nmr_TmK' in ds.data_vars:
+        x, y = ds.mips_GRPZ_field_persistent.data, ds.nmr_TmK.data
+        peaks, _ = find_peaks(abs(np.gradient(y)), distance=100)
+        peaks = np.asarray(peaks) + 5
+        Bnmr, Tnmr = x[peaks], y[peaks]
+
+        ds['tnmr'] = (['Bnmr'], ds.t.data[peaks])
+        ds['tnmr_s'] = (['Bnmr'], ds.time_s.data[peaks])
+        ds.tnmr.attrs = dict(long_name='time')
+        ds['Bnmr'] = Bnmr
+        ds['M0'] = (['Bnmr'], ds.nmr_M0.data[peaks])
+        ds['Tnmr'] = (['Bnmr'], Tnmr, dict(long_name=r'T$_{\mathrm{nmr}}$', unit='mK'))
+
+    n = 100  # in mol
+    lambda_n_mu = 3.22e-6  # in
+
+    gamma_e = 0.691e-3  # in J/mol/K^2
+    N = 159.3  # in mol
+
+    def cal_Cn(T, B):
+        return n * lambda_n_mu * (B / T) ** 2 + N*gamma_e*T
+
+    def cal_Pdemag(T, B, Ti, Bi, dBdt):
+        return cal_Cn(T, B) * Ti * dBdt / Bi
+
+    def cal_Ptotal(T, B, dTdt):
+        return cal_Cn(T, B) * dTdt
+
+    # prepare data
+    T = savgol_filter(ds.T.data, 71, 1)  # in K
+    B = savgol_filter(ds.mips_GRPZ_field_persistent.data, 71, 1)  # in Tesla
+    ind_init = abs(B - Bi).argmin()
+    Ti, Bi = T[ind_init], B[ind_init]
+
+    ds['Tideal'] = ('mips_GRPZ_field_persistent', Ti * ds.mips_GRPZ_field_persistent.data / Bi)
+    ds['Tideal_mK'] = ('mips_GRPZ_field_persistent', 1e3 * Ti * ds.mips_GRPZ_field_persistent.data / Bi)
+
+    ds['deltaT'] = ('mips_GRPZ_field_persistent', 1e3 * (ds.T.data - ds.Tideal.data))
+    if 'nmr_TmK' in ds.data_vars:
+        ds['Tnmr_ideal'] = (['Bnmr'], ds['Tideal_mK'][peaks].data)
     
+    
+    # Heat capacitance
+    ds['Cn'] = ('mips_GRPZ_field_persistent', cal_Cn(T, B))
+
+    # Cooling power in the ideal case
+    ds['dBdt'] = ('mips_GRPZ_field_persistent', savgol_filter(np.gradient(B) / np.gradient(ts), 71, 1))
+    ds['dBdt_abs'] = -1e3 * 60 * ds.dBdt
+    ds['Pideal'] = ('mips_GRPZ_field_persistent', 1e6 * cal_Pdemag(T, B, Ti, Bi, ds.dBdt.data))  # uW
+
+    # total cooling power
+    ds['dTdt'] = ('mips_GRPZ_field_persistent', savgol_filter(np.gradient(T) / np.gradient(ts), 71, 1))
+    ds['Ptotal'] = ('mips_GRPZ_field_persistent', 1e6 * cal_Ptotal(T, B, ds.dTdt.data))
+
+    # Heating power
+    ds['Pheat'] = ds.Ptotal - ds.Pideal  # uW
+
+    return ds
 
 if __name__ == "__main__":
         

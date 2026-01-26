@@ -52,7 +52,8 @@ class MCTControlPanel(QWidget):
     
     def setup_ui(self):
         layout = QVBoxLayout()
-        
+        layout.setSpacing(0)
+
         # Control section
         layout.addWidget(self.create_control_section())
         
@@ -70,6 +71,7 @@ class MCTControlPanel(QWidget):
     def create_control_section(self):
         group = QGroupBox("MCT Control")
         layout = QVBoxLayout()
+        layout.setSpacing(0)
         
         # Connection row
         conn_hbox = QHBoxLayout()
@@ -90,10 +92,10 @@ class MCTControlPanel(QWidget):
         
         # Capacitance
         cap_hbox = QHBoxLayout()
-        cap_hbox.addWidget(QLabel("Capacitance (C):"))
+        cap_hbox.addWidget(QLabel("C_mct (pF):"))
         self.cap_display = QLineEdit("0")
         self.cap_display.setReadOnly(True)
-        self.cap_display.setMinimumWidth(150)
+        self.cap_display.setMinimumWidth(50)
         font_size = self.font().pointSize()
         self.cap_display.setStyleSheet(f"font-weight: bold; color: red; font-size: {font_size}pt;")
         cap_hbox.addWidget(self.cap_display)
@@ -103,11 +105,11 @@ class MCTControlPanel(QWidget):
         
         # Temperature
         temp_hbox = QHBoxLayout()
-        temp_hbox.addWidget(QLabel("Temperature:"))
-        self.temp_display = QLineEdit("0 mK")
+        temp_hbox.addWidget(QLabel("T_mct (mK):"))
+        self.temp_display = QLineEdit("0")
         self.temp_display.setReadOnly(True)
-        self.temp_display.setMinimumWidth(150)
-        self.temp_display.setStyleSheet(f"font-weight: bold; color: red; font-size: {font_size}pt;")
+        self.temp_display.setMinimumWidth(50)
+        self.temp_display.setStyleSheet(f"font-weight: bold; color: red;")
         temp_hbox.addWidget(self.temp_display)
         readings_hbox.addLayout(temp_hbox)
         
@@ -115,10 +117,10 @@ class MCTControlPanel(QWidget):
         
         # Loss
         loss_hbox = QHBoxLayout()
-        loss_hbox.addWidget(QLabel("Loss (L):"))
+        loss_hbox.addWidget(QLabel("Loss (uS):"))
         self.loss_display = QLineEdit("0")
         self.loss_display.setReadOnly(True)
-        self.loss_display.setMinimumWidth(150)
+        self.loss_display.setMinimumWidth(50)
         self.loss_display.setStyleSheet(f"font-weight: bold; color: red; font-size: {font_size}pt;")
         loss_hbox.addWidget(self.loss_display)
         readings_hbox.addLayout(loss_hbox)
@@ -132,6 +134,7 @@ class MCTControlPanel(QWidget):
     def create_graph_section(self):
         group = QGroupBox("Real-time Monitoring")
         layout = QVBoxLayout()
+        layout.setSpacing(0)
         
         # Graph type selection
         graph_select_layout = QHBoxLayout()
@@ -148,8 +151,9 @@ class MCTControlPanel(QWidget):
         # Create graph widget
         self.graph_widget = pg.GraphicsLayoutWidget()
         self.graph_widget.setBackground('w')
+        # self.graph_widget.setFixedHeight(600)
         layout.addWidget(self.graph_widget)
-        
+
         # Create plot
         self.plot = self.graph_widget.addPlot(title="Real-time Monitoring")
         
@@ -182,7 +186,8 @@ class MCTControlPanel(QWidget):
     def connect_mct(self):
         str_input = self.addr_input.text()
         try:
-            from driver.AH2500A import AH2500A
+            # from demag_gui.driver.AH2500A import AH2500A
+            from demag_gui.driver.virtual_instruments import AH2500A
             self.mct_instrument = AH2500A('mct', str_input)
             
             self.mct_thread = MCTReadingThread(self.mct_instrument, self.mct_calc)
@@ -213,11 +218,7 @@ class MCTControlPanel(QWidget):
             if self.mct_instrument:
                 self.mct_instrument.close()
                 self.mct_instrument = None
-            
-            self.cap_display.setText("0")
-            self.temp_display.setText("0 mK")
-            self.loss_display.setText("0")
-            
+
             self.connect_btn.setText("Connect")
             self.status_label.setText("Disconnected")
             self.status_label.setStyleSheet("color: gray")
@@ -227,10 +228,9 @@ class MCTControlPanel(QWidget):
     
     def update_readings(self, cap_value, loss_value, temp_low, timestamp):
         # Update display
-        self.cap_display.setText(f"{cap_value}")
-        self.loss_display.setText(f"{loss_value}")
-        self.temp_display.setText(f"{temp_low:.4f} mK")
-        
+        self.cap_display.setText(f"{cap_value:.6f}")
+        self.loss_display.setText(f"{loss_value:.4f}")
+        self.temp_display.setText(f"{temp_low:.4f}")
         # Store data
         self.cap_data.append(cap_value)
         self.temp_data.append(temp_low)

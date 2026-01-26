@@ -85,6 +85,7 @@ class AH2500A(VisaInstrument):
         # convert to values
         self.C_cv = 0
         while self.C_cv == 0:
+            s = self.ask('CO')
             self.C_cv, self.L_cv, self.V_cv = float(re.findall(r'\d+\.\d+', s)[0]), float(re.findall(r'\d+\.\d+', s)[1]), float(re.findall(r'\d+\.\d+', s)[2])
         return [self.C_cv, self.L_cv, self.V_cv]
         
@@ -103,9 +104,6 @@ class AH2500A(VisaInstrument):
     def get_C_L_V(self):
         return self._read_cv()
 
-    # def get_TmK(self):
-    #     return mct.C2T_low(self.C_cv)[0]
-        
     def set_V(self, v):
         self.write(f'V {v}')
 
