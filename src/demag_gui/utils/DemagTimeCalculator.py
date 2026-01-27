@@ -55,13 +55,20 @@ def DemagTimeCalculator():
         time_points_hours += list(np.linspace(t_hours[0], t_hours[1], 100))
 
         start_T, stop_T = window[0], window[1]
+        wait_time_min = 0 if stop_T>2 else 10
 
         field_values_T += list(np.linspace(start_T, stop_T, num=100))
+
+
         summary_table_rows += [
-            [f"from {start_T} to {stop_T}",  f"{rate_mT_per_min} mT/min", f"{(t_hours[1]-t_hours[0]):.2f} hrs"]
+            [
+                f"from {start_T} to {stop_T}",  
+                f"{rate_mT_per_min} mT/min", 
+                f"{(t_hours[1]-t_hours[0]):.2f} hrs", 
+                f"wait for {wait_time_min} min" if wait_time_min>0 else "no wait"]
         ]
         total_time_hours += t_hours[1]-t_hours[0]
-        target_rates[stop_T] = rate_mT_per_min
+        target_rates[stop_T] = {'rate':rate_mT_per_min, 'wait_time_min': wait_time_min}
 
     # convert sampled hour offsets into actual datetimes
     time_datetimes = [datetime.fromtimestamp(start_time.timestamp() + th * 3600) for th in time_points_hours]
@@ -120,7 +127,6 @@ def DemagTimeCalculator():
                            colColours=['#f2f2f2']*len(df.columns))
     ax.set(ylim=0, xlim=[time_datetimes[0], time_datetimes[-1]], xlabel='time', ylabel='field (T)', title=f'Total Time = {total_time_hours:.2f} hrs')
     ax.tick_params('x', rotation=30)
-    fig.tight_layout()
     plt.show()
     return target_rates
 
