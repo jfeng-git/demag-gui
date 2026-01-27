@@ -109,7 +109,7 @@ def DemagTimeCalculator():
             plt.plot([time_datetimes[idx]]*2, [0, field], color='red', zorder=0, ls='--')
             plt.plot([time_datetimes[0], time_datetimes[idx]], [field]*2, color='red', zorder=0, ls='--')
 
-    ax_table1 = fig.add_axes((1, 0.5, 0.6, 0.5))
+    ax_table1 = fig.add_axes((0.95, 0.5, 0.6, 0.5))
     ax_table1.axis('off')
     table = ax_table1.table(
         cellText=summary_table_rows,
@@ -117,7 +117,7 @@ def DemagTimeCalculator():
         loc = 'center',
     )
 
-    ax_table = fig.add_axes((1, 0.2, 0.4, 0.5))
+    ax_table = fig.add_axes((0.95, 0.2, 0.4, 0.5))
     ax_table.axis('off')
     print(df)
     table = ax_table.table(cellText=df.values,
