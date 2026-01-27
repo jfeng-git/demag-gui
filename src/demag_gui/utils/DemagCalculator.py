@@ -3,6 +3,8 @@ import pandas as pd
 import importlib.resources
 from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
+from qcodes.dataset.data_set import load_by_id
+import xarray as xa
 
 def load_time_measurements(run_ids):
     dses = [load_by_id(run_id=run_id).to_xarray_dataset() for run_id in run_ids]
