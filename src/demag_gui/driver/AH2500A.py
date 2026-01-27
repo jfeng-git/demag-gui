@@ -15,7 +15,7 @@ from typing import Tuple
 
 
 class AH2500A(VisaInstrument):
-    def __init__(self, name, address, **kwargs):
+    def __init__(self, name, address, initiate_voltage=None, **kwargs):
         super().__init__(name, address, **kwargs)
 
         self.add_parameter('C',
@@ -61,12 +61,14 @@ class AH2500A(VisaInstrument):
         # Interface
         self.add_function('reset', call_cmd='*RST')
 
-        self.V(1.5)
-        self._read_cv()
-        print(f'voltage set to {self.V()}')
-        self.Average(4)
-        self._read_cv()
-        print(f'averaging set to {self.Average()}')
+        if initiate_voltage is not None:
+            self.V(initiate_voltage)
+            time.sleep(0.1)
+            self._read_cv()
+            print(f'voltage set to {self.V()}')
+            self.Average(4)
+            self._read_cv()
+            print(f'averaging set to {self.Average()}')
         
 
     def _read_cv(self):
