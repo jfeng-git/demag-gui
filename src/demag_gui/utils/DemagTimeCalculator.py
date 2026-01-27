@@ -47,6 +47,7 @@ def DemagTimeCalculator():
 
     total_time_hours = 0
     summary_table_rows = []
+    target_rates = {}
     for window, t_hours, rate_T_per_hr in zip(field_windows, window_times_hours, avg_rates_T_per_hr):
         # present rate in mT/min for human-readable table
         rate_mT_per_min = round(rate_T_per_hr * 1000 / 60, 0)
@@ -60,6 +61,7 @@ def DemagTimeCalculator():
             [f"from {start_T} to {stop_T}",  f"{rate_mT_per_min} mT/min", f"{(t_hours[1]-t_hours[0]):.2f} hrs"]
         ]
         total_time_hours += t_hours[1]-t_hours[0]
+        target_rates[stop_T] = rate_mT_per_min
 
     # convert sampled hour offsets into actual datetimes
     time_datetimes = [datetime.fromtimestamp(start_time.timestamp() + th * 3600) for th in time_points_hours]
@@ -119,6 +121,7 @@ def DemagTimeCalculator():
     ax.set(ylim=0, xlim=[time_datetimes[0], time_datetimes[-1]], xlabel='time', ylabel='field (T)', title=f'Total Time = {total_time_hours:.2f} hrs')
     ax.tick_params('x', rotation=30)
     plt.show()
+    return target_rates
 
 if __name__ == "__main__":
     DemagTimeCalculator()
