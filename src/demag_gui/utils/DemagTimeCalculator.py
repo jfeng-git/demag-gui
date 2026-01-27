@@ -12,13 +12,13 @@ def DemagTimeCalculator():
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
 
 
-    field_targets = [7, 6, 5, 4, 3, 2, 1, 0.03]
+    field_targets = [8, 7, 6, 5, 4, 3, 2, 0.6, 0.03]
     field_windows = [[8.5, field_targets[0]]]
     field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
 
     # decay constant (1/hour) used to compute window end times, B=B0*exp(-k*t)
     time_to_1T_hours = 10
-    k = np.log(8.5/1)/time_to_1T_hours
+    k = np.log(8.5/0.6)/time_to_1T_hours
 
     # window_times_hours: for each field window produce [start_hour, stop_hour]
     window_times_hours = [np.log(8.5/np.asarray(f))/k for f in field_windows]
@@ -102,7 +102,7 @@ def DemagTimeCalculator():
             plt.plot([time_datetimes[idx]]*2, [0, field], color='red', zorder=0, ls='--')
             plt.plot([time_datetimes[0], time_datetimes[idx]], [field]*2, color='red', zorder=0, ls='--')
 
-    ax_table1 = fig.add_axes((0.3, 0.5, 0.6, 0.5))
+    ax_table1 = fig.add_axes((1, 0.5, 0.6, 0.5))
     ax_table1.axis('off')
     table = ax_table1.table(
         cellText=summary_table_rows,
@@ -110,7 +110,7 @@ def DemagTimeCalculator():
         loc = 'center',
     )
 
-    ax_table = fig.add_axes((0.5, 0.2, 0.4, 0.5))
+    ax_table = fig.add_axes((1, 0.2, 0.4, 0.5))
     ax_table.axis('off')
     print(df)
     table = ax_table.table(cellText=df.values,
@@ -120,6 +120,7 @@ def DemagTimeCalculator():
                            colColours=['#f2f2f2']*len(df.columns))
     ax.set(ylim=0, xlim=[time_datetimes[0], time_datetimes[-1]], xlabel='time', ylabel='field (T)', title=f'Total Time = {total_time_hours:.2f} hrs')
     ax.tick_params('x', rotation=30)
+    fig.tight_layout()
     plt.show()
     return target_rates
 
