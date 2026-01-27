@@ -212,14 +212,14 @@ def cal_Q(T_K, B=0., cal_dQdt=False, t=[]):
         return dQ*1e6 # in uJ
 
 
-def process_demag_data(ds, Bi=8.2):
+def process_demag_data(ds, Bi=8.2, mct=None):
     try:
         ds = ds.swap_dims({'t': 'mips_GRPZ_field_persistent'})
     except:
         pass
-
-    mct = MctCalculator()
-    mct.recalibrate([[65.06, mct.P_min]])
+    if mct is None:
+        mct = MctCalculator()
+        mct.recalibrate([[65.06, mct.P_min]])
     inds = [i for i, val in enumerate(list(ds.AH2500A_C.data < 73)) if val]
     for ind in inds:
         ds.AH2500A_C[ind] = ds.AH2500A_C[ind - 2]
