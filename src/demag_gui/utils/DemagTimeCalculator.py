@@ -2,36 +2,41 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
-import math
 
 
-def DemagTimeCalculator(field_rate_mapping=None):
+
+def DemagTimeCalculator():
+    # TODO: make this a class that can be imported and used elsewhere
     # start_time is a datetime for the beginning of the demagnetization schedule
-    start_time = '2026-01-27T23:00:00'
+    start_time = '2026-01-28T00:00:00'
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
 
-    if field_rate_mapping is None:
-        # total_time1T = 10 # 10 hours to 1T
-        # start_field = 8.5
-        # end_field = 1
-        field_targets = [7, 6, 5, 4, 3, 2, 1, 0.03]
-        field_windows = [[8.5, field_targets[0]]]
-        field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
-        target_rate_mapping = {}
 
-        # decay constant (1/hour) used to compute window end times
-        k = 0.212
-        # window_times_hours: for each field window produce [start_hour, stop_hour]
-        window_times_hours = [np.log(8.5/np.asarray(f))/k for f in field_windows]
-        # avg_rates_T_per_hr: average rate across each window in Tesla/hour
-        avg_rates_T_per_hr = [(target[0]-target[1])/(t[1]-t[0]) for target, t in zip(field_windows, window_times_hours)]
+    field_targets = [7, 6, 5, 4, 3, 2, 1, 0.03]
+    field_windows = [[8.5, field_targets[0]]]
+    field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
 
-        # field_rate_map_mT_per_min: mapping used/presented to the user (units: mT/min)
-        field_rate_mapping = {
-                f'{field[0]} to {field[1]}': round(rate * 1000 / 60, 0) for field, rate in zip(field_windows, avg_rates_T_per_hr)
-                }
+    # decay constant (1/hour) used to compute window end times, B=B0*exp(-k*t)
+    time_to_1T_hours = 10
+    k = np.log(8.5/1)/time_to_1T_hours
+
+    # window_times_hours: for each field window produce [start_hour, stop_hour]
+    window_times_hours = [np.log(8.5/np.asarray(f))/k for f in field_windows]
+    # avg_rates_T_per_hr: average rate across each window in Tesla/hour
+    avg_rates_T_per_hr = [(target[0]-target[1])/(t[1]-t[0]) for target, t in zip(field_windows, window_times_hours)]
+
+    # field_rate_map_mT_per_min: mapping used/presented to the user (units: mT/min)
+    field_rate_mapping = {
+            f'{field[0]} to {field[1]}': round(rate * 1000 / 60, 0) for field, rate in zip(field_windows, avg_rates_T_per_hr)
+            }
+    
     for field, rate in field_rate_mapping.items():
         print(field, f"{rate} mT/min")
+    
+    print('\n')
+    for window, rate in zip(field_windows, field_rate_mapping.values()):
+        print(f"{window[1]}: {rate}, ")
+    print('\n')
 
     # build arrays of sample times (hours from start) and field values (T)
     time_points_hours = []
@@ -113,7 +118,6 @@ def DemagTimeCalculator(field_rate_mapping=None):
                            colColours=['#f2f2f2']*len(df.columns))
     ax.set(ylim=0, xlim=[time_datetimes[0], time_datetimes[-1]], xlabel='time', ylabel='field (T)', title=f'Total Time = {total_time_hours:.2f} hrs')
     ax.tick_params('x', rotation=30)
-    # fig.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
