@@ -4,6 +4,24 @@ import importlib.resources
 from scipy.signal import savgol_filter
 from scipy.signal import find_peaks
 
+def load_time_measurements(run_ids):
+    dses = [load_by_id(run_id=run_id).to_xarray_dataset() for run_id in run_ids]
+    for ii, ds in enumerate(dses):
+        if 'index' in ds.dims:
+            ds = ds.swap_dims({'index': 't'}).drop_vars('index')
+        # print(ds.dims)
+        ds['ellapstime'] = (list(ds.dims), ds[list(ds.dims)[0]].data)
+        base_time = pd.to_datetime(ds.attrs['run_timestamp'])
+        timestamps = np.asarray([base_time + pd.Timedelta(seconds=s) for s in ds.t.data])
+        # ds['tmin'] = (ds.dims, (timestamps - timestamps[0])/1e9/60)
+        dses[ii] = ds.assign_coords(t=timestamps)
+    # return xa.concat(dses, dim='t').rename_dims({'t': 'time'})
+    ds = xa.concat(dses, dim='t')
+    ts = [float(t - ds.t.data[0])/1e9/60 for t in ds.t.data]
+    ds['time'] = (
+        ds.dims, ts, dict(unit='min')
+    )
+    return ds
 
 class MctCalculator:
     def __init__(self, C_Pdata=None):
