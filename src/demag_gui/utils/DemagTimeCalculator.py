@@ -4,55 +4,35 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 
-k = 0.212
-field_values = [8.5, 7, 6, 5, 4, 3, 2, 1]
-times = [math.log(8.5/f)/k for f in field_values]
-avg_rates = [(field_values[i]-field_values[i+1])/(times[i+1]-times[i]) for i in range(len(field_values)-1)]
 
 def DemagTimeCalculator(field_rate_mapping=None):
     start_time = '2026-01-27T23:00:00'
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
 
-    # field-rate mapping, field in T, rate in mT/min
-    # original
-    # [0.012, 0.006, 0.004], [4, 2, 0.3]
-    # field_rate_mapping = {
-    #     8.5: 12,
-    #     4.0: 6,
-    #     2.: 4,
-    #     0.3: 1,
-    #     0.03: 0
-    # }
-
     if field_rate_mapping is None:
-        # field_rate_mapping = {
-        #     8.5: 11,
-        #     7: 10,
-        #     6: 7,
-        #     5: 4,
-        #     3.: 3,
-        #     1: 1,
-        #     0.03: 0
-        # }
         total_time1T = 10 # 10 hours to 1T
         start_field = 8.5
         end_field = 1
-        field_steps = np.array([8.5, 7, 6, 5, 4, 3, 2, 1, 0.03, 0.0])
-        field_rate_mapping = {}
+        field_targets = [7, 6, 5, 4, 3, 2, 1, 0.03]
+        field_windows = [[8.5, field_targets[0]]]
+        field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
+        target_rate_mapping = {}
         
         k = 0.212
-        times = [math.log(8.5/f)/k for f in field_steps]
-        avg_rates = [(field_steps[i]-field_steps[i+1])/(times[i+1]-times[i]) for i in range(len(field_steps)-1)]
-        for field, rate in zip(field_steps, avg_rates):
-            field_rate_mapping[field] = round(rate* 1000 / 60, 0)# convert to mT/min
-        # field_rate_mapping[0.03] = 1
+        times = [np.log(8.5/np.asarray(f))/k for f in field_windows]
+        avg_rates = [(target[0]-target[1])/(t[1]-t[0]) for target, t in zip(field_windows,times)]
+        print(avg_rates)
+        field_rate_mapping = {
+                f'{field[0]} to {field[1]}': round(rate* 1000 / 60, 0) for field, rate in zip(field_windows, avg_rates)
+                }
     for field, rate in field_rate_mapping.items():
         print(field, rate)
 
     ts = []
     Bs = []
 
-    field_targets = list(field_rate_mapping.keys())
+    field_targets = [float(s.split(' ')[-1]) for s in list(field_rate_mapping.keys())]
+    print(field_targets)
     # rates converted to T/s
     field_rates = np.asarray(list(field_rate_mapping.values()))/1e3/60
     elapsed_times = abs(np.diff(field_targets)/field_rates[:-1])
