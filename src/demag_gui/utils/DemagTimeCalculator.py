@@ -8,11 +8,11 @@ import pandas as pd
 def DemagTimeCalculator():
     # TODO: make this a class that can be imported and used elsewhere
     # start_time is a datetime for the beginning of the demagnetization schedule
-    start_time = '2026-01-28T00:00:00'
+    start_time = '2026-01-29T00:00:00'
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
 
 
-    field_targets = [8, 7, 6, 5, 4, 3, 2, 0.6, 0.03]
+    field_targets = [8, 7, 6, 5, 4, 3, 2, 1, 0.6, 0.03]
     field_windows = [[8.5, field_targets[0]]]
     field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
 
