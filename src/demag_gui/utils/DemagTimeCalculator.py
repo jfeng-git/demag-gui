@@ -5,10 +5,10 @@ import pandas as pd
 
 
 
-def DemagTimeCalculator():
+def DemagTimeCalculator(time_to_1T_hours=15, wait_time_min_low=10, start_time = '2026-01-29T00:00:00'):
     # TODO: make this a class that can be imported and used elsewhere
     # start_time is a datetime for the beginning of the demagnetization schedule
-    start_time = '2026-01-29T00:00:00'
+    
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
 
 
@@ -17,7 +17,6 @@ def DemagTimeCalculator():
     field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
 
     # decay constant (1/hour) used to compute window end times, B=B0*exp(-k*t)
-    time_to_1T_hours = 10
     k = np.log(8.5/0.6)/time_to_1T_hours
 
     # window_times_hours: for each field window produce [start_hour, stop_hour]
@@ -55,7 +54,7 @@ def DemagTimeCalculator():
         time_points_hours += list(np.linspace(t_hours[0], t_hours[1], 100))
 
         start_T, stop_T = window[0], window[1]
-        wait_time_min = 0 if stop_T>2 else 10
+        wait_time_min = 0 if stop_T>2 else wait_time_min_low
 
         field_values_T += list(np.linspace(start_T, stop_T, num=100))
 
