@@ -83,4 +83,4 @@ class UDP5303(VisaInstrument):
                 sleep(0.1)
             for action in actions:
                 action()
-        print(f'', end='\r')
+        print(f'Heater current {self.I()}')
