@@ -17,7 +17,7 @@ def DemagTimeCalculator(time_to_1T_hours=15, wait_time_min_low=10, start_time = 
     field_windows += [[field_targets[i], field_targets[i+1]] for i in range(len(field_targets)-1)]
 
     # decay constant (1/hour) used to compute window end times, B=B0*exp(-k*t)
-    k = np.log(8.5/0.6)/time_to_1T_hours
+    k = np.log(8.5/0.1)/time_to_1T_hours
 
     # window_times_hours: for each field window produce [start_hour, stop_hour]
     window_times_hours = [np.log(8.5/np.asarray(f))/k for f in field_windows]
