@@ -37,3 +37,42 @@ def timming(target, trigger=1., actions=[]):
         for action in actions:
             action()
         sleep(trigger)
+
+def magnet_heater_on(mips, actions=[]):
+    # if already on, skip
+    if mips.GRPZ.heater_switch() == 'ON':
+        print(f'heater is already {mips.GRPZ.heater_switch()}, skip.')
+        return 'already set'
+
+    # check current status
+    B_output = mips.GRPZ.field()
+    B_persistance = mips.GRPZ.field_persistent()
+    B_target = mips.GRPZ.field_target()
+    
+    print(f'output field = {B_output}, persistance field = {B_persistance}')
+    print(f'current target = {B_target}, heater is {mips.GRPZ.heater_switch()}')
+
+    # if output field is not persistance field, ramp output field first
+    if abs(B_persistance - B_output)>0.001:
+        print(f'set field target to {B_persistance} then ramp to set')
+        mips.GRPZ.field_target(B_persistance)
+        mips.ramp(mode="simul")
+        print(f'rampping field to {mips.GRPZ.field_target()}')
+        print(f'persistance field = {B_persistance}')
+        while not mips.GRPZ.ramp_status()=='HOLD':
+            print(f'output field = {mips.GRPZ.field()}', end='\r')
+            for action in actions:
+                action()
+    print(f'output field = {mips.GRPZ.field()}\n')
+    
+    # check output field again
+    B_output = mips.GRPZ.field()
+    B_persistance = mips.GRPZ.field_persistent()
+    
+    if abs(B_persistance - B_output)<0.001:
+        print('\nset heater on')
+        mips.GRPZ.heater_switch('ON')
+    else:
+        print(f'output field = {B_output}, persistance field = {B_persistance}')
+        print('failed to ramp field, check')
+        
