@@ -60,30 +60,23 @@ class UDP5303(VisaInstrument):
             # print(f'OUTP {val_map[val]}')
             self.write(f'OUTP {val_map[val]}')
         
-    # def get_L(self):
-    #     s = self.ask('CO')
-    #     return float(re.findall(r'\d+\.\d+', s)[1])
+    def set_HS(self, status, ts=1, step=0.002, actions=[]):
+        status = status.lower()
+        ts = max([ts, 0.1])
+        if not status in ['on', 'off']:
+            print('input should be on or off')
+            return 0
+        I_vals = np.arange(0, 0.501, step)
+        
+        if status == 'off':
+            I_vals = I_vals[::-1]
 
-    # def get_V(self):
-    #     s = self.ask('CO')
-    #     return float(re.findall(r'\d+\.\d+', s)[2])
+        I_cv = self.I()
+        I_ind = abs(I_vals - I_cv).argmin()
 
-    # def get_C_L(self):
-    #     s = self.ask('CO')
-    #     return float(re.findall(r'\d+\.\d+', s)[0]), float(re.findall(r'\d+\.\d+', s)[1])
+        for I in I_vals[I_ind:]:
 
-    # def get_C_L_V(self):
-    #     s = self.ask('CO')
-    #     return float(re.findall(r'\d+\.\d+', s)[0]), float(re.findall(r'\d+\.\d+', s)[1]), float(re.findall(r'\d+\.\d+', s)[2])
-
-    # def set_V(self, v):
-    #     self.write(f'V {v}')
-
-    # def set_Average(self, val):
-    #     self.write(f'AV {val}')
-
-    # def get_Average(self):
-    #     return int(self.ask('SH AV').split('=')[-1][:-1])
-
-    SNAP_PARAMETERS = {'I': '1',
-                       'V': '2',}
+            self.I(I)
+            sleep(ts)
+            for action in actions:
+                action()
