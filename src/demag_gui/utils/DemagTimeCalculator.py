@@ -126,6 +126,7 @@ def DemagTimeCalculator(time_to_1T_hours=15, wait_time_min_low=10, start_time = 
                            colColours=['#f2f2f2']*len(df.columns))
     ax.set(ylim=0, xlim=[time_datetimes[0], time_datetimes[-1]], xlabel='time', ylabel='field (T)', title=f'Total Time = {total_time_hours:.2f} hrs')
     ax.tick_params('x', rotation=30)
+    fig.savefig('demag_rates.png', bbox_inches=0)
     plt.show()
     return target_rates
 
