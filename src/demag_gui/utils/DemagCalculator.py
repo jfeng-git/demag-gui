@@ -233,7 +233,7 @@ def process_demag_data(ds, Bi=8.2, mct=None):
     if 'nmr_TmK' in ds.data_vars:
         x, y = ds.mips_GRPZ_field_persistent.data, ds.nmr_TmK.data
         peaks, _ = find_peaks(abs(np.gradient(y)), distance=100)
-        peaks = np.asarray(peaks) + 5
+        peaks = np.asarray(peaks) + 2
         Bnmr, Tnmr = x[peaks], y[peaks]
 
         ds['tnmr'] = (['Bnmr'], ds.t.data[peaks])
